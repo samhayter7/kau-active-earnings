@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KAU Active Earnings</title>
+<meta name="description" content="Nine responsive UI concepts for showing live, counting-up active earnings on pledged KAU — desktop and mobile side by side.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body>
+
+<header class="wrap hero">
+  <span class="eyebrow"><svg viewBox="0 0 22 24"><path d="M1 1h6v9.2L15.4 1H22l-9.6 10.4L22 23h-6.8L7 13v10H1z" fill="#ef3b4f"/></svg>Kinesis · Earn · Asset page</span>
+  <h1>Showing <em>active earnings</em> that count up, live</h1>
+  <p class="lead">Nine ways to show what a user is earning right now on pledged KAU. Each one is shown on desktop and mobile side by side, and every number is driven by the same live accrual model. Use the time controls to fast-forward: at <b>1 day/s</b> a monthly payout lands about every 30 seconds.</p>
+  <div class="facts">
+    <div class="fact"><div class="k">KAU balance (demo)</div><div class="v">12.65850 g · $1,713.92</div></div>
+    <div class="fact"><div class="k">Active pledges</div><div class="v">2 · 6.50000 KAU</div></div>
+    <div class="fact"><div class="k">Rates</div><div class="v">4.5% (90d) · 6.0% (180d)</div></div>
+    <div class="fact"><div class="k">Payouts (assumed)</div><div class="v">1st of each month, in KAU</div></div>
+  </div>
+</header>
+
+<div class="topbar">
+  <div class="wrap ctls">
+    <div class="ctl">Time
+      <div class="pills"><button class="on" data-speed="1">Real time</button><button data-speed="60">1 min/s</button><button data-speed="3600">1 hr/s</button><button data-speed="86400">1 day/s</button></div>
+    </div>
+    <div class="ctl">Primary unit
+      <div class="pills"><button class="on" data-cur="kau">KAU</button><button data-cur="usd">USD</button></div>
+    </div>
+    <div class="simclock" id="simclock"></div>
+  </div>
+  <nav class="wrap toc">
+    <a href="#o1"><b>01</b>Live card</a><a href="#o2"><b>02</b>Odometer hero</a><a href="#o3"><b>03</b>Payout ring</a><a href="#o4"><b>04</b>Pledge ledger</a><a href="#o5"><b>05</b>Unified balance</a><a href="#o6"><b>06</b>Live chart</a><a href="#o7"><b>07</b>Pill + sheet</a><a href="#o8"><b>08</b>Empty state</a><a href="#o9"><b>09</b>Buy &amp; pledge</a><a href="#guide"><b>✦</b>Implementation notes</a>
+  </nav>
+</div>
+
+<main>
+
+<!-- ================= 01 ================= -->
+<section class="concept" id="o1" data-tpl="t1"><div class="wrap">
+  <div class="c-head"><span class="c-num">01</span>
+    <div><h2>Live earnings card</h2><p>Keep the card you have today, but give Active earnings enough decimal places to visibly move. Add a pulse, a daily rate and a countdown to the next payout.</p></div>
+    <div class="c-meta"><span class="tag low">Low effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Closest to the current design, so it's the fastest to ship.</li><li>At 8 dp the number ticks about once a second. At 6 dp (today) it changes only every ~95 s, so it looks frozen.</li><li>Trailing digits are dimmed, so the stable part reads first and the motion stays calm.</li><li>The progress bar answers the next question users have: "when do I get it?"</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>8 decimals is wide on mobile. The type shrinks and lifetime earnings collapse to a single row.</li><li>"Active" vs "Lifetime" needs a one-line definition in the tooltip.</li></ul></div>
+  </div>
+</div></section>
+<template id="t1"><div data-part="earnings">
+<section class="card c1">
+  <div class="row between"><span class="h3">KAU earnings</span><span class="live"><i></i>Live</span></div>
+  <div class="c1-grid">
+    <div>
+      <div class="lbl row" style="gap:4px">Active earnings <span data-ic="info" class="info"></span></div>
+      <div class="c1-big" data-v="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2" data-lbl="KAU"></div>
+      <div class="c1-sub"><span>≈ <span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span></span><span class="green">+<span data-v="rate.day" data-dp="6"></span> KAU/day</span></div>
+    </div>
+    <div>
+      <div><div class="lbl">Lifetime earnings</div><div class="lbl" style="font-size:11px">Paid to date</div></div>
+      <div class="c1-big green" data-v="lifetime" data-u="usd"></div>
+    </div>
+    <div class="c1-cycle">
+      <div class="row between"><span>Accruing since <b data-t="cycle.start"></b></span><span>Pays <b data-t="payout.date"></b> · <span data-t="cycle.left"></span></span></div>
+      <div class="bar"><i data-w="cycle.pct"></i></div>
+    </div>
+    <button class="c1-pl"><span class="row"><i class="pdot"></i>2 active pledges</span><span class="row"><span class="mut">6.50000 KAU</span><span data-ic="chevr" class="mut"></span></span></button>
+  </div>
+</section></div></template>
+
+<!-- ================= 02 ================= -->
+<section class="concept" id="o2" data-tpl="t2"><div class="wrap">
+  <div class="c-head"><span class="c-num">02</span>
+    <div><h2>Odometer hero</h2><p>Rolling digits on a dark gold card. The yield is turned into concrete amounts per hour, day, month and year, so earning feels real.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>The strongest emotional moment. Watching gold accrue is the product's promise.</li><li>The rate breakdown turns "5.08% APY" into money a user can picture.</li><li>Doubles as an upsell surface: "Manage pledges" lives right here.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>It's heavy, and on the asset page it competes with the price chart. It may suit the Earn page better.</li><li>Needs a reduced-motion fallback (digits swap without rolling). That's already handled here.</li><li>The dark card breaks an otherwise light page. Use it once, sparingly.</li></ul></div>
+  </div>
+</div></section>
+<template id="t2"><div data-part="earnings">
+<section class="card c2">
+  <div class="row between"><span class="row c2-t"><span class="kau"></span>Your gold is earning</span><span class="live"><i></i>Live</span></div>
+  <div class="c2-lbl">Active earnings this cycle</div>
+  <div class="c2-odo"><span class="odo" data-odo="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2"></span><span class="c2-unit" data-t="cur"></span></div>
+  <div class="c2-usd">≈ <span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span> · paid to your balance on <b data-t="payout.date"></b></div>
+  <div class="c2-rates">
+    <div class="c2-rate"><div class="lbl">Per hour</div><b>+<span data-v="rate.hour" data-dp="7"></span></b><span data-v="rate.hour" data-u="usd" data-dpu="4"></span></div>
+    <div class="c2-rate"><div class="lbl">Per day</div><b>+<span data-v="rate.day" data-dp="6"></span></b><span data-v="rate.day" data-u="usd" data-dpu="3"></span></div>
+    <div class="c2-rate"><div class="lbl">Per month</div><b>+<span data-v="rate.month" data-dp="5"></span></b><span data-v="rate.month" data-u="usd"></span></div>
+    <div class="c2-rate"><div class="lbl">Per year</div><b>+<span data-v="rate.year" data-dp="4"></span></b><span data-v="rate.year" data-u="usd"></span></div>
+  </div>
+  <div class="c2-foot">
+    <div><div class="lbl">Lifetime earnings</div><b data-v="lifetime" data-u="usd"></b></div>
+    <div><div class="lbl">Pledged</div><b>6.50000 KAU</b></div>
+    <div><div class="lbl">Blended APY</div><b>5.08%</b></div>
+    <button class="btn">Manage pledges</button>
+  </div>
+</section></div></template>
+
+<!-- ================= 03 ================= -->
+<section class="concept" id="o3" data-tpl="t3"><div class="wrap">
+  <div class="c-head"><span class="c-num">03</span>
+    <div><h2>Payout ring</h2><p>Earnings are framed around the payout cycle. A ring fills toward payday, one tick per day, while the accrued amount counts up in the centre.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Answers "how much?" and "when?" at a glance.</li><li>The live countdown builds anticipation, and the projected payout sets expectations.</li><li>The ring is a familiar pattern, like Apple Fitness or a savings goal.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Only works with a fixed cycle (e.g. monthly). With continuous or daily payouts the ring means less.</li><li>Takes vertical space on mobile, about 230 px before the details.</li></ul></div>
+  </div>
+</div></section>
+<template id="t3"><div data-part="earnings">
+<section class="card c3">
+  <div class="row between"><span class="h3">KAU earnings</span><span class="live"><i></i>Live</span></div>
+  <div class="c3-body">
+    <div class="ring">
+      <svg viewBox="0 0 230 230"><circle cx="115" cy="115" r="104" class="ticks"/><circle cx="115" cy="115" r="88" class="track"/><circle cx="115" cy="115" r="88" class="prog" data-ring="cycle.pct"/><g data-rot="cycle.pct"><circle cx="203" cy="115" r="7" class="knob"/></g></svg>
+      <div class="ring-c">
+        <div class="lbl">Active earnings</div>
+        <div class="c3-big" data-v="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2"></div>
+        <div class="lbl"><span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span></div>
+        <div class="c3-day" data-t="cycle.day"></div>
+      </div>
+    </div>
+    <div class="c3-side">
+      <div class="kv"><span>Next payout</span><b data-t="payout.date"></b></div>
+      <div class="kv"><span>Time remaining</span><b data-t="cycle.left"></b></div>
+      <div class="kv"><span>Projected payout</span><b><span data-v="projected" data-u="pri" data-dp="6" data-lbl="KAU"></span></b></div>
+      <div class="kv"><span>Earning rate</span><b class="green">+<span data-v="rate.day" data-dp="6"></span> KAU/day</b></div>
+      <div class="kv"><span>Lifetime earnings</span><b class="green" data-v="lifetime" data-u="usd"></b></div>
+      <div class="row c3-btns"><button class="btn dark">Earn on KAU</button><button class="btn">View payouts</button></div>
+    </div>
+  </div>
+</section></div></template>
+
+<!-- ================= 04 ================= -->
+<section class="concept" id="o4" data-tpl="t4"><div class="wrap">
+  <div class="c-head"><span class="c-num">04</span>
+    <div><h2>Pledge ledger</h2><p>Active earnings broken down by pledge. Each one ticks on its own, with its own term progress, maturity date and daily rate.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Transparent when a user has several pledges with different APYs or terms.</li><li>Scales to N pledges, and each row is a natural home for actions (top up, unlock, renew).</li><li>Term progress shows when locked KAU becomes available again.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Lots of ticking rows can feel busy. Consider ticking only the total and showing rows at 6 dp.</li><li>Long lists need "Show all" collapsing after about 3 rows.</li></ul></div>
+  </div>
+</div></section>
+<template id="t4"><div data-part="earnings">
+<section class="card c4">
+  <div class="row between"><span class="h3">KAU earnings</span><button class="btn sm"><span data-ic="plus"></span>New pledge</button></div>
+  <div class="c4-sum">
+    <div class="c4-hero">
+      <div class="lbl row">Active earnings <span class="live"><i></i>Live</span></div>
+      <div class="c4-big" data-v="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2" data-lbl="KAU"></div>
+      <div class="lbl">≈ <span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span> · pays <b data-t="payout.date"></b></div>
+    </div>
+    <div class="stat"><span class="lbl">Lifetime</span><b class="green" data-v="lifetime" data-u="usd"></b><span class="sub">paid to date</span></div>
+    <div class="stat"><span class="lbl">Pledged</span><b>6.50000</b><span class="sub">KAU · 51%</span></div>
+    <div class="stat"><span class="lbl">Blended APY</span><b>5.08%</b><span class="sub">2 pledges</span></div>
+  </div>
+  <div class="c4-list">
+    <div class="c4-row">
+      <span class="c4-ic" data-ic="lock"></span>
+      <div class="c4-nm"><b>90-day pledge</b><span class="lbl">4.00000 KAU · 4.5% APY</span></div>
+      <div class="c4-tm"><div class="bar"><i data-w="term.p1"></i></div><div class="lbl"><span data-t="termday.p1"></span> · matures <span data-t="mat.p1"></span></div></div>
+      <div class="c4-er"><b class="green">+<span data-v="active.p1" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2"></span></b><div class="lbl">+<span data-v="rate.day.p1" data-dp="6"></span>/day</div></div>
+      <span class="c4-ch" data-ic="chevr"></span>
+    </div>
+    <div class="c4-row">
+      <span class="c4-ic" data-ic="lock"></span>
+      <div class="c4-nm"><b>180-day pledge</b><span class="lbl">2.50000 KAU · 6.0% APY</span></div>
+      <div class="c4-tm"><div class="bar"><i data-w="term.p2"></i></div><div class="lbl"><span data-t="termday.p2"></span> · matures <span data-t="mat.p2"></span></div></div>
+      <div class="c4-er"><b class="green">+<span data-v="active.p2" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2"></span></b><div class="lbl">+<span data-v="rate.day.p2" data-dp="6"></span>/day</div></div>
+      <span class="c4-ch" data-ic="chevr"></span>
+    </div>
+  </div>
+  <div class="c4-foot"><span data-ic="info"></span>Earnings accrue every second and are paid into your KAU balance on the 1st of each month.</div>
+</section></div></template>
+
+<!-- ================= 05 ================= -->
+<section class="concept" id="o5" data-tpl="t5"><div class="wrap">
+  <div class="c-head"><span class="c-num">05</span>
+    <div><h2>Unified balance</h2><p>Earnings move into the balance card (your P&amp;L widget). One composition bar shows available, pledged and accruing gold, and accruals tick right next to the balance.</p></div>
+    <div class="c-meta"><span class="tag med">Medium–High effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span><span>Replaces balance + earnings cards</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>One card, one source of truth, and the page gets shorter.</li><li>Shows that pledged gold is still the user's gold. It's just working.</li><li>The most visible placement: the first number users look at is the one that's alive.</li><li>Total return becomes live too, because it includes accruals.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Accrued but unpaid amounts must not be confused with balance. Keep them as a separate green "+" chip, not added into 12.65850.</li><li>The stats grid grows to 6 items.</li></ul></div>
+  </div>
+</div></section>
+<template id="t5" data-focus="balance"><div data-part="balance">
+<section class="card c5">
+  <div class="row between c5-top">
+    <span class="row"><span class="kau"></span><span class="h3">KAU balance</span><span class="chip g"><i class="pdot g pulse"></i>Earning 5.08% APY</span></span>
+    <div class="row"><button class="btn">Send</button><button class="btn">Receive</button></div>
+  </div>
+  <div class="c5-big"><span data-v="balance" data-dp="5"></span><small>g</small><span class="c5-acc"><i class="pulse"></i><span>+<span data-v="active" data-dp="8" data-split="4"></span></span></span></div>
+  <div class="bal-sub"><span data-v="balance" data-u="usd"></span><span class="green"><span data-ic="upr"></span>$246.11 (4.71%)</span><span class="fnt">All</span></div>
+  <div class="comp"><i class="av" style="flex:6.1585"></i><i class="pl" style="flex:6.5"></i><i class="ac"></i></div>
+  <div class="legend">
+    <span><i class="sw av"></i>Available <b><span data-v="avail" data-dp="5"></span> g</b></span>
+    <span><i class="sw pl"></i>Pledged <b>6.50000 g</b></span>
+    <span><i class="sw ac"></i>Accruing <b class="green" data-v="active" data-dp="8"></b></span>
+  </div>
+  <div class="stats six">
+    <div class="stat"><span class="lbl">Realised return</span><b class="green">↗$612.86</b></div>
+    <div class="stat"><span class="lbl">Total return</span><b class="green">↗<span data-v="totalReturn" data-u="usd"></span></b></div>
+    <div class="stat"><span class="lbl">Cost basis</span><b>$925.00</b></div>
+    <div class="stat"><span class="lbl">Active earnings</span><b class="green" data-v="active" data-u="pri" data-dp="8" data-dpu="5"></b></div>
+    <div class="stat"><span class="lbl">Lifetime earnings</span><b class="green" data-v="lifetime" data-u="usd"></b></div>
+    <div class="stat"><span class="lbl">Next payout</span><b data-t="payout.date"></b></div>
+  </div>
+</section></div>
+<div data-part="earnings"></div></template>
+
+<!-- ================= 06 ================= -->
+<section class="concept" id="o6" data-tpl="t6"><div class="wrap">
+  <div class="c-head"><span class="c-num">06</span>
+    <div><h2>Live accrual chart</h2><p>This cycle's earnings plotted in real time, with a dashed projection to payday. It mirrors the price chart pattern higher up the page.</p></div>
+    <div class="c-meta"><span class="tag high">High effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Shows the trajectory, and when a new pledge started (the line gets steeper part-way through the month).</li><li>The projected payout is a strong motivator, and it updates the moment a pledge is added.</li><li>Feels native next to the price chart.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Within one cycle the line is nearly straight. The "All" view (monthly payouts as steps) is where it shines.</li><li>Needs an earnings-history endpoint, so it's the most engineering work.</li></ul></div>
+  </div>
+</div></section>
+<template id="t6"><div data-part="earnings">
+<section class="card c6">
+  <div class="row between"><span class="h3">KAU earnings</span><div class="seg"><button class="on">This cycle</button><button>3M</button><button>All</button></div></div>
+  <div class="c6-head">
+    <div><div class="lbl row">Active earnings <span class="live"><i></i>Live</span></div>
+      <div class="c6-big" data-v="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2" data-lbl="KAU"></div>
+      <div class="lbl">≈ <span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span></div></div>
+    <div class="c6-proj"><div class="lbl">Projected payout · <span data-t="payout.date"></span></div>
+      <div class="c6-pv" data-v="projected" data-u="pri" data-dp="6" data-lbl="KAU"></div>
+      <div class="lbl">≈ <span data-v="projected" data-u="sec" data-dp="6" data-lbl="KAU"></span></div></div>
+  </div>
+  <svg class="chart" data-chart="cycle" height="200"></svg>
+  <div class="stats">
+    <div class="stat"><span class="lbl">Lifetime earnings</span><b class="green" data-v="lifetime" data-u="usd"></b></div>
+    <div class="stat"><span class="lbl">Active pledges</span><b>2 · 6.50000</b></div>
+    <div class="stat"><span class="lbl">Blended APY</span><b>5.08%</b></div>
+    <div class="stat"><span class="lbl">Pays in</span><b data-t="cycle.left"></b></div>
+  </div>
+</section></div></template>
+
+<!-- ================= 07 ================= -->
+<section class="concept" id="o7" data-tpl="t7"><div class="wrap">
+  <div class="c-head"><span class="c-num">07</span>
+    <div><h2>Ambient pill + earnings sheet</h2><p>A small live pill sits in the header on every page. Tapping it opens the full Earnings view, which extends your existing Pledged / Earnings sheet: a drawer on desktop, a bottom sheet on mobile.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span><span>Click the scrim to close, the pill to reopen</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Tap outside the sheet to close</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Keeps earning visible across the whole app without taking space on the page.</li><li>Reuses the sheet you've already designed (tabs, eye toggle, referral, "View payouts").</li><li>The privacy eye blurs every amount. Try it.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>The header is crowded on mobile. Show the pill only when there are active pledges.</li><li>A global element needs a global data subscription, not just on the asset page.</li></ul></div>
+  </div>
+</div></section>
+<template id="t7">
+<div data-part="pill"><button class="ep-pill" data-open><i class="pulse"></i>Earning <b data-v="active" data-dp="8" data-split="4"></b> KAU<span data-ic="chevr"></span></button></div>
+<div data-part="earnings">
+<section class="card">
+  <div class="row between"><span class="h3">KAU earnings</span><button class="btn" data-open>View earnings</button></div>
+  <div class="stats" style="margin-top:14px">
+    <div class="stat"><span class="lbl">Active earnings</span><b class="green" data-v="active" data-dp="8" data-split="4"></b></div>
+    <div class="stat"><span class="lbl">Lifetime earnings</span><b class="green" data-v="lifetime" data-u="usd"></b></div>
+    <div class="stat"><span class="lbl">Pledges</span><b>2 active</b></div>
+    <div class="stat"><span class="lbl">Next payout</span><b data-t="payout.date"></b></div>
+  </div>
+</section></div>
+<div data-part="sheet">
+<div data-tabs>
+  <div class="tab-bar"><button data-tab="pl">Pledged</button><button data-tab="ea" class="on">Earnings</button></div>
+  <div data-panel="ea">
+    <div class="s-hero">
+      <div><div class="lbl row">Active earnings <span class="live"><i></i>Live</span></div>
+        <div class="s-big money" data-v="active" data-u="pri" data-dp="8" data-dpu="6" data-split="4" data-splitu="2" data-lbl="KAU"></div>
+        <div class="lbl money">≈ <span data-v="active" data-u="sec" data-dp="6" data-dpu="4" data-lbl="KAU"></span></div></div>
+      <button class="eye" data-eye aria-label="Hide amounts" data-ic="eye"></button>
+    </div>
+    <div class="s-cyc"><div class="row between lbl"><span>Paid to balance <b style="color:var(--ink);font-weight:500" data-t="payout.date"></b></span><span data-t="cycle.left"></span></div><div class="bar"><i data-w="cycle.pct"></i></div></div>
+    <div class="s-sec"><div class="lbl">Lifetime earnings</div><div class="s-life green money" data-v="lifetime" data-u="usd"></div><div class="lbl">Paid to date</div>
+      <div class="stats two" style="margin-top:14px"><div class="stat"><span class="lbl">Last month</span><b class="green money">$3.71</b></div><div class="stat"><span class="lbl">Year to date</span><b class="green money">$93.06</b></div></div></div>
+    <div class="s-sec"><div class="lbl">Earning now</div>
+      <div class="mini"><span class="c4-ic" data-ic="lock"></span><div><b style="font-weight:500">90-day pledge</b><div class="lbl">4.00000 KAU · 4.5%</div></div><div class="mini-r"><b class="green money">+<span data-v="active.p1" data-dp="8" data-split="4"></span></b><div class="lbl"><span data-t="termday.p1"></span></div></div></div>
+      <div class="mini"><span class="c4-ic" data-ic="lock"></span><div><b style="font-weight:500">180-day pledge</b><div class="lbl">2.50000 KAU · 6.0%</div></div><div class="mini-r"><b class="green money">+<span data-v="active.p2" data-dp="8" data-split="4"></span></b><div class="lbl"><span data-t="termday.p2"></span></div></div></div>
+    </div>
+    <div class="s-sec row between"><div><div class="lbl">Referral commission</div><div class="s-ref money">$1,000.24</div></div><button class="btn">Refer</button></div>
+    <div class="s-sec" style="border:0;padding-bottom:0"><button class="btn block">View payouts</button></div>
+  </div>
+  <div data-panel="pl" hidden>
+    <div class="s-tot"><div class="lbl">Total pledged</div><div class="s-big money">6.50000<small class="ul">KAU</small></div><div class="lbl">≈ $880.10 · 51% of your KAU</div></div>
+    <div class="s-sec">
+      <div class="mini"><span class="c4-ic" data-ic="lock"></span><div style="flex:1"><b style="font-weight:500">90-day pledge · 4.5%</b><div class="bar" style="margin:6px 0 4px"><i data-w="term.p1"></i></div><div class="lbl"><span data-t="termday.p1"></span> · matures <span data-t="mat.p1"></span></div></div><div class="mini-r"><b class="money">4.00000</b></div></div>
+      <div class="mini"><span class="c4-ic" data-ic="lock"></span><div style="flex:1"><b style="font-weight:500">180-day pledge · 6.0%</b><div class="bar" style="margin:6px 0 4px"><i data-w="term.p2"></i></div><div class="lbl"><span data-t="termday.p2"></span> · matures <span data-t="mat.p2"></span></div></div><div class="mini-r"><b class="money">2.50000</b></div></div>
+    </div>
+    <div class="s-sec" style="padding-bottom:0"><button class="btn block dark"><span data-ic="plus"></span>New pledge</button></div>
+  </div>
+</div>
+</div></template>
+
+<!-- ================= 08 ================= -->
+<section class="concept" id="o8" data-tpl="t8"><div class="wrap">
+  <div class="c-head"><span class="c-num">08</span>
+    <div><h2>Empty state: pledge calculator</h2><p>With no active pledges, the earnings card shows what the user <i>could</i> earn. That includes a live "since you opened this page" counter, so they see the ticking before they commit.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span><span>Drag the slider · pick a term</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Scroll inside the phone</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Turns today's dead state ("0.000000 · 0 active pledges") into an acquisition surface.</li><li>The live preview demonstrates the product: users watch gold they don't yet earn tick up.</li><li>Amount, term and APY sit together, so the decision happens in one place.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Needs compliance copy: rates are variable, figures are estimates, KAU is locked for the term.</li><li>Pre-filling an amount (6 KAU here) nudges hard. Agree a default with compliance.</li></ul></div>
+  </div>
+</div></section>
+<template id="t8"><div data-part="earnings">
+<section class="card c8">
+  <div class="row between"><span class="h3">KAU earnings</span><span class="chip g">Up to 6.0% APY</span></div>
+  <div class="c8-hero"><span class="c8-ic" data-ic="spark"></span><div><b>Put your gold to work</b><p class="lbl">Pledge KAU you already hold. Earnings accrue every second and are paid in gold on the 1st of each month.</p></div></div>
+  <div class="c8-calc">
+    <div class="row between"><span class="lbl">Pledge amount</span><span class="lbl">Available 12.65850 KAU</span></div>
+    <div class="c8-amt"><span data-calc-out="amt"></span><small>KAU</small><small data-calc-out="amtusd"></small></div>
+    <input type="range" min="0" max="12.6585" step="0.00001" value="6" data-calc="amt" aria-label="Pledge amount">
+    <div class="row c8-q"><button class="btn sm" data-pct=".25">25%</button><button class="btn sm" data-pct=".5">50%</button><button class="btn sm" data-pct="1">Max</button></div>
+    <div class="lbl">Term</div>
+    <div class="seg full"><button data-apy=".03">Flexible · 3.0%</button><button data-apy=".045">90 days · 4.5%</button><button data-apy=".06" class="on">180 days · 6.0%</button></div>
+    <div class="stats three">
+      <div class="stat"><span class="lbl">Per day</span><b class="green" data-calc-out="day"></b><span class="sub" data-calc-out="dayusd"></span></div>
+      <div class="stat"><span class="lbl">Per month</span><b class="green" data-calc-out="month"></b><span class="sub" data-calc-out="monthusd"></span></div>
+      <div class="stat"><span class="lbl">Per year</span><b class="green" data-calc-out="year"></b><span class="sub" data-calc-out="yearusd"></span></div>
+    </div>
+    <div class="c8-live"><i class="pulse" style="color:var(--grn)"></i><span>Since you opened this page you'd have earned</span><b data-calc-out="live"></b></div>
+    <button class="btn primary block"><span>Pledge <span data-calc-out="amt"></span> KAU</span></button>
+    <div class="tiny">Estimates only. Rates are variable and not guaranteed. Pledged KAU is locked until the term ends.</div>
+  </div>
+</section></div></template>
+
+<!-- ================= 09 ================= -->
+<section class="concept" id="o9" data-tpl="t9"><div class="wrap">
+  <div class="c-head"><span class="c-num">09</span>
+    <div><h2>Buy &amp; pledge + live activity</h2><p>Users can pledge at the moment they buy. Accruing earnings appear as a live "pending" row at the top of Activity, above the monthly payout rows they'll become.</p></div>
+    <div class="c-meta"><span class="tag med">Medium effort</span><button class="zoom" data-zoom>Full size</button></div></div>
+  <div class="frames"><div class="fd"><div class="frame-lbl"><span>Desktop · 1200</span><span>Toggle "Pledge after purchase"</span></div></div><div class="fm"><div class="frame-lbl"><span>Mobile · 390</span><span>Close the sheet to see Activity</span></div></div></div>
+  <div class="notes">
+    <div class="note"><h4>Why it works</h4><ul><li>Removes a whole flow between buying gold and earning on it.</li><li>The pending row links "active earnings" to the payout transaction it turns into, so history makes sense.</li><li>Payout rows give lifetime earnings a verifiable audit trail.</li></ul></div>
+    <div class="note"><h4>Watch-outs</h4><ul><li>Auto-pledge locks funds, so the term disclosure must be clear. Default the toggle to off if compliance prefers.</li><li>The activity API has to merge a synthetic pending row with real transactions.</li></ul></div>
+  </div>
+</div></section>
+<template id="t9" data-focus="activity">
+<div data-part="buy">
+<section class="card buy">
+  <div class="row between"><div class="seg dk"><button class="on">Buy</button><button>Sell</button></div><button class="btn"><span data-ic="card"></span>Buy with card</button></div>
+  <div class="buy-h">Buy Gold</div>
+  <div class="row between"><div class="seg"><button>25%</button><button>50%</button><button>Max</button></div><button class="btn" style="background:none">Instant buy <span data-ic="chevd"></span></button></div>
+  <div class="buy-boxes">
+    <div class="buy-box"><div><div class="lbl">Pay</div><div class="buy-v">$500</div></div><div class="buy-asset"><span class="row"><span class="c1usd">1</span><b>C1USD</b><span data-ic="chevd"></span></span><span class="lbl">Balance $2,140.00</span></div></div>
+    <span class="swap" data-ic="swap"></span>
+    <div class="buy-box"><div><div class="lbl">Receive</div><div class="buy-v">3.69276</div></div><div class="buy-asset"><span class="row"><span class="kau"></span><b>KAU</b><span data-ic="chevd"></span></span><span class="lbl">Balance 12.65850</span></div></div>
+  </div>
+  <div class="rate">1 KAU = $135.40</div>
+  <div class="po">
+    <div class="row between"><span class="row po-h"><span data-ic="spark"></span>Pledge after purchase</span><label class="switch"><input type="checkbox" checked aria-label="Pledge after purchase"><i></i></label></div>
+    <div class="po-b">
+      <div class="seg full"><button>Flexible 3.0%</button><button>90d 4.5%</button><button class="on">180d 6.0%</button></div>
+      <div class="row between"><span class="mut">Est. earnings</span><b class="green">+0.000607 KAU/day</b></div>
+      <div class="row between"><span class="mut">≈ per month</span><b>$2.50</b></div>
+      <div class="row between"><span class="mut">First payout</span><b data-t="payout.date"></b></div>
+    </div>
+  </div>
+  <button class="btn primary buy-cta"><span class="t-on">Buy &amp; pledge</span><span class="t-off">Buy Gold</span></button>
+</section></div>
+<div data-part="activity">
+<section class="card">
+  <div class="row between act-h"><span class="h3">Activity</span><button class="btn sm">See all</button></div>
+  <div class="act-row pending"><span class="act-ic gold" data-ic="spark"></span><div class="act-nm"><b>Active earnings</b><span class="lbl">Accruing · pays <span data-t="payout.date"></span></span></div><div class="act-am green">+<span data-v="active" data-dp="8" data-split="4"></span> g</div><div class="act-us" data-v="active" data-u="usd" data-dpu="4"></div><div class="act-dt"><span class="live"><i></i>Live</span></div></div>
+  <div class="act-row"><span class="act-ic" data-ic="up"></span><div class="act-nm"><b>To Sean Norris</b></div><div class="act-am">-1.34929 g</div><div class="act-us">-$182.69</div><div class="act-dt">Today, 9:41</div></div>
+  <div class="act-row"><span class="act-ic gold" data-ic="spark"></span><div class="act-nm"><b>Earnings payout</b></div><div class="act-am green">+0.02713 g</div><div class="act-us">$3.67</div><div class="act-dt">1 Oct, 00:00</div></div>
+  <div class="act-row"><span class="act-ic" data-ic="exch"></span><div class="act-nm"><b>USD → KAU</b></div><div class="act-am">+0.18390 g</div><div class="act-us">$24.90</div><div class="act-dt">29 Sep, 9:41</div></div>
+  <div class="act-row"><span class="act-ic gold" data-ic="spark"></span><div class="act-nm"><b>Earnings payout</b></div><div class="act-am green">+0.02588 g</div><div class="act-us">$3.50</div><div class="act-dt">1 Sep, 00:00</div></div>
+</section></div>
+</template>
+
+<!-- ================= Guidelines ================= -->
+<section class="concept" id="guide"><div class="wrap">
+  <div class="c-head"><span class="c-num">✦</span><div><h2>Implementation notes</h2><p>These apply whichever option you choose.</p></div></div>
+  <div class="g-grid">
+    <div class="note"><h4>Precision decides the tick rate</h4>
+      <p>With 6.5 KAU pledged at a blended 5.08%, accrual is about <b>0.0000000105 KAU/s</b> ($0.0000014/s). The number of decimals decides whether the counter looks alive or frozen:</p>
+      <table class="ptab"><thead><tr><th>Display</th><th>Changes every</th><th>Feels</th></tr></thead><tbody>
+        <tr><td>KAU · 6 dp (today)</td><td>~95 s</td><td>Broken / frozen</td></tr>
+        <tr><td>KAU · 7 dp</td><td>~10 s</td><td>Sluggish</td></tr>
+        <tr class="rec"><td>KAU · 8 dp</td><td>~1 s</td><td>Like a clock ✓</td></tr>
+        <tr><td>KAU · 10 dp</td><td>~100× / s</td><td>Blur, noise</td></tr>
+        <tr class="rec"><td>USD · 6 dp</td><td>~0.7 s</td><td>Like a clock ✓</td></tr>
+      </tbody></table>
+      <p>Recommendation: <b>choose precision per user</b>, so the hero ticks about once a second whether someone pledges 1 g or 10 kg: <code>dp = clamp(ceil(-log10(kauPerSecond)), 4, 10)</code>. Show the first 4 decimals at full weight and dim the rest.</p></div>
+    <div class="note"><h4>Live engine</h4><ul>
+      <li>The API returns a snapshot per pledge: <code>{accrued, ratePerSec, asOf, maturesAt}</code>. The client renders <code>accrued + ratePerSec × (now − asOf)</code> on <code>requestAnimationFrame</code>.</li>
+      <li>Resync every 60 s and when the window regains focus. <b>Never count backwards</b>: if the server value is lower, hold the display until it catches up.</li>
+      <li>Clamp at maturity. Set the rate to 0 when a pledge ends or is unlocked, and stop the pulse.</li>
+      <li>On payout: reset active to 0, bump lifetime and balance with a brief highlight, and add a payout row to Activity. Try <b>1 day/s</b> above.</li>
+      <li>Only animate on-screen elements (IntersectionObserver). The browser pauses rAF in background tabs.</li></ul></div>
+    <div class="note"><h4>Motion &amp; accessibility</h4><ul>
+      <li>Always use tabular numerals, so digits don't jitter sideways while ticking.</li>
+      <li><code>prefers-reduced-motion</code>: keep updating once a second, but drop the odometer roll and the pulses.</li>
+      <li>Don't put <code>aria-live</code> on ticking nodes, or screen readers will spam. Expose a rounded <code>aria-label</code> (e.g. "0.0151 KAU earned this cycle") that updates every minute.</li>
+      <li>"Live" needs a text label as well as the green dot. Colour alone isn't enough.</li>
+      <li>Respect the privacy eye: blur every live amount, including the header pill.</li></ul></div>
+    <div class="note"><h4>Copy</h4><ul>
+      <li><b>Active earnings</b>: "Earned on your pledges since your last payout. Paid into your KAU balance on 1 Nov."</li>
+      <li><b>Lifetime earnings</b>: "Total earnings paid to your balance to date."</li>
+      <li><b>Projected payout</b>: "Estimate if your pledges stay the same until 1 Nov. Rates may change."</li>
+      <li>Use "g" or "KAU" consistently. Today the page mixes <i>g</i> (balance) and <i>KAU</i> (earnings).</li></ul></div>
+  </div>
+  <div class="note q"><h4>Open questions for you</h4><ol>
+    <li><b>Payout cadence.</b> I assumed monthly on the 1st. Is it daily, monthly or at maturity? This decides whether the ring and countdown ideas (03, 01) make sense.</li>
+    <li><b>Compounding.</b> Do payouts land as available KAU, or are they auto-added to the pledge?</li>
+    <li><b>Rates.</b> Is APY fixed per pledge for its term, or variable? Should a blended APY be shown at all?</li>
+    <li><b>Primary unit.</b> Should the hero number be KAU/grams (assumed) or fiat? You can toggle this at the top to compare.</li>
+    <li><b>Early unlock.</b> Can a pledge be broken early, and is active earnings then forfeited? If so, the copy needs to say "at risk" somewhere.</li>
+    <li><b>The P&amp;L widget mock</b> shows "1.2% APY" and "Available rate 12%". Which rates are real, so the demo data matches?</li>
+  </ol></div>
+</div></section>
+
+</main>
+
+<footer class="wrap foot">Concept prototypes for Kinesis Earn · demo data only · Built Oct 2026</footer>
+
+<div class="toast" id="toast" role="status"><span class="ti"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span><span class="tm"></span></div>
+
+<script src="app.js?v=6"></script>
+</body>
+</html>
